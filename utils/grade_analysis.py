@@ -2,10 +2,18 @@
 
 import re
 import pandas as pd
+from utils.pdf_processing import normalize_text
 
 def categorize_course(name: str) -> str:
-    """只比對符號前的中文字，回傳 'Required','I','II' 或 'Other'"""
-    base = re.sub(r'（.*?）|\(.*?\)|上學期|下學期|[、:：「」【】\[\]–—]', '', name).strip()
+    """
+    只比對符號前的中文字，回傳 'Required','I','II' 或 'Other'
+    """
+    base = re.sub(
+        r'（.*?）|\(.*?\)|上學期|下學期|[、:：「」【】\[\]–—]',
+        '',
+        name
+    ).strip()
+
     REQUIRED = {
         "綜合日語一A","綜合日語一B","綜合日語一C",
         "綜合日語二A","綜合日語二B","綜合日語二C",
@@ -43,13 +51,19 @@ def categorize_course(name: str) -> str:
     return "Other"
 
 def is_passing_gpa(gpa: str) -> bool:
-    """C-以上（含 C-）、通過、抵免都算通過"""
+    """C-以上（含C-）、通過、抵免都算通過"""
     return bool(re.search(r'抵免|通過|[ABC][\+\-]?|C-', str(gpa)))
 
 def calculate_total_credits(df_list: list[pd.DataFrame]) -> dict:
     """
-    接受多個 DataFrame，回傳學分統計字典：
-      'total', 'required', 'i_elective', 'ii_elective', 'other_elective', 'passed', 'failed'
+    接受多個 DataFrame，回傳以下字典：
+      'total'          : float  總學分
+      'required'       : float  必修學分
+      'i_elective'     : float  一類選修學分
+      'ii_elective'    : float  二類選修學分
+      'other_elective' : float  其他選修學分
+      'passed'         : list   通過課程明細
+      'failed'         : list   未通過課程明細
     """
     total_credits    = 0.0
     required_credits = 0.0
@@ -61,15 +75,14 @@ def calculate_total_credits(df_list: list[pd.DataFrame]) -> dict:
 
     for df in df_list:
         for _, row in df.iterrows():
-            name = row.get("科目名稱") or row.get("name") or ""
-            # 先嘗試把學分轉成 float
+            raw_name = row.get("科目名稱") or row.get("name") or ""
+            name = normalize_text(raw_name)
             raw_credit = row.get("學分") or row.get("credit") or 0.0
             try:
                 credit = float(raw_credit)
-            except Exception:
+            except:
                 credit = 0.0
-            # 取成績欄位
-            gpa = row.get("GPA") or row.get("成績") or row.get("gpa") or ""
+            gpa = row.get("成績") or row.get("GPA") or row.get("gpa") or ""
 
             if is_passing_gpa(gpa):
                 passed.append({"科目名稱": name, "學分": credit, "成績": gpa})

@@ -33,7 +33,14 @@ def main():
 
     # 處理 PDF
     dfs = process_pdf_file(uploaded_file)
-    total, passed, failed = calculate_total_credits(dfs)
+    stats = calculate_total_credits(dfs)
+    total        = stats['total']
+    required     = stats['required']
+    i_elective   = stats['i_elective']
+    ii_elective  = stats['ii_elective']
+    other_elective = stats['other_elective']
+    passed       = stats['passed']
+    failed       = stats['failed']
 
     # 顯示結果
     st.markdown("---")
@@ -58,8 +65,8 @@ def main():
         )
 
     # 通過課程列表
-    st.markdown("### 📚 通過的課程列表")
-    if passed:
+    st.markdown("### 📚 通過的課程列表
+    if stats['passed']:
         df_passed = pd.DataFrame(passed)
         st.dataframe(df_passed, use_container_width=True)
         csv_pass = df_passed.to_csv(index=False, encoding='utf-8-sig')
@@ -70,6 +77,7 @@ def main():
             mime="text/csv"
         )
     else:
+        st.info("未偵測到任何通過的課程。")
         st.info("未偵測到任何通過的課程。")
 
     # 不及格課程列表

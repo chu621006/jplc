@@ -30,7 +30,7 @@ def main():
         st.info("請先上傳檔案，以開始學分計算。")
         return
 
-    # 單一路徑：Docx 解析
+    # DOCX 解析與學分計算
     dfs = process_docx_file(uploaded_file)
     total_credits, passed, failed = calculate_total_credits(dfs)
 
@@ -87,44 +87,6 @@ def main():
         )
     else:
         st.info("未偵測到任何不及格的課程。")
-
-    # （可保留後續通識 Word 單獨上傳功能）
-    st.markdown("---")
-    st.markdown("## 🎓 通識學分計算 (Word 單獨功能)")
-    with open("caculate.pdf", "rb") as f:
-        pdf_bytes = f.read()
-    st.download_button(
-        label="‼️ 通識學分計算使用說明 (PDF) ‼️",
-        data=pdf_bytes,
-        file_name="通識學分計算使用說明處理.pdf",
-        mime="application/pdf"
-    )
-    gen_docx = st.file_uploader(
-        "請上傳 Word 檔 (.docx) 以計算通識學分", type=["docx"], key="gened_word"
-    )
-    if gen_docx:
-        dfs_gen = process_docx_file(gen_docx)
-        _, passed_gen, _ = calculate_total_credits(dfs_gen)
-        df_gen = pd.DataFrame(passed_gen)
-        if df_gen.empty:
-            st.info("未偵測到任何通識課程。")
-        else:
-            prefixes = ("人文：", "自然：", "社會：")
-            df_selected = df_gen[df_gen["科目名稱"].str.startswith(prefixes)].reset_index(drop=True)
-            if df_selected.empty:
-                st.info("未偵測到任何符合通識前綴的課程。")
-            else:
-                total_gen = df_selected["學分"].sum()
-                st.markdown(
-                    f"<p style='font-size:28px; font-weight:bold;'>通識總學分：{total_gen:.0f}</p>",
-                    unsafe_allow_html=True
-                )
-                df_selected["領域"] = df_selected["科目名稱"].str.extract(r"^(人文：|自然：|社會：)")[0].str[:-1]
-                gen_by_area = df_selected.groupby("領域")["學分"].sum().reindex(["人文","自然","社會"], fill_value=0)
-                st.markdown("**各領域學分**：")
-                for area, credits in gen_by_area.items():
-                    st.markdown(f"- {area}：{credits:.0f} 學分")
-                st.dataframe(df_selected[["領域", "科目名稱", "學分"]], use_container_width=True)
 
     # 回饋 & 開發者資訊
     st.markdown(

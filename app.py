@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-from pdf_processing import process_pdf_file
-from grade_analysis import calculate_total_credits
+from utils.pdf_processing import process_pdf_file
+from utils.grade_analysis import calculate_total_credits
 
 def main():
     st.set_page_config(page_title="成績單學分計算工具", layout="wide")

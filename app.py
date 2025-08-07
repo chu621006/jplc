@@ -1,3 +1,5 @@
+# app.py
+
 import streamlit as st
 import pandas as pd
 from utils.pdf_processing import process_pdf_file
@@ -26,12 +28,11 @@ def main():
         "選擇一個成績單檔案（支援 PDF）",
         type=["pdf"]
     )
-
     if not uploaded_file:
         st.info("請先上傳 PDF 檔案，以開始學分計算。")
         return
 
-    # 處理 PDF
+    # 處理 PDF 與計算
     dfs = process_pdf_file(uploaded_file)
     stats = calculate_total_credits(dfs)
     total           = stats["total"]
@@ -77,7 +78,7 @@ def main():
         st.dataframe(df_failed, use_container_width=True)
         csv_fail = df_failed.to_csv(index=False, encoding="utf-8-sig")
         st.download_button(
-            label="下載不及格課程 CSV",
+            label="下載不及格課程列表 CSV",
             data=csv_fail,
             file_name="不及格課程列表.csv",
             mime="text/csv"

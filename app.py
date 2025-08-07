@@ -1,12 +1,23 @@
+--- app.py --- 
+import streamlit as st 
+import pandas as pd from utils.pdf_processing 
+import process_pdf_file from utils.grade_analysis 
+import calculate_total_credits
+
+def main(): st.set_page_config(page_title="成績單學分計算工具", layout="wide") st.title("📄 成績單學分計算工具")
+
 # 使用說明下載按鈕
-with open("usage_guide.pdf", "rb") as f:
-    pdf_bytes = f.read()
-st.download_button(
-    label="📖 使用說明 (PDF)",
-    data=pdf_bytes,
-    file_name="使用說明.pdf",
-    mime="application/pdf"
-)
+try:
+    with open("usage_guide.pdf", "rb") as f:
+        pdf_bytes = f.read()
+    st.download_button(
+        label="📖 使用說明 (PDF)",
+        data=pdf_bytes,
+        file_name="使用說明.pdf",
+        mime="application/pdf"
+    )
+except FileNotFoundError:
+    st.warning("使用說明檔案 usage_guide.pdf 不存在。")
 
 # 上傳成績單區（僅限 PDF）
 st.write("請上傳成績單（PDF 純表格）。")
@@ -15,25 +26,25 @@ uploaded_file = st.file_uploader(
     type=["pdf"]
 )
 
-if not uploaded_file:
+if uploaded_file is None:
     st.info("請先上傳 PDF 檔案，以開始學分計算。")
     return
 
 # 處理 PDF
 dfs = process_pdf_file(uploaded_file)
-total_credits, passed, failed = calculate_total_credits(dfs)
+total, passed, failed = calculate_total_credits(dfs)
 
 # 顯示結果
 st.markdown("---")
 st.markdown("## ✅ 查詢結果")
 st.markdown(
-    f"<p style='font-size:32px; margin:4px 0;'>目前總學分：<strong>{total_credits:.2f}</strong></p>",
+    f"<p style='font-size:32px; margin:4px 0;'>目前總學分：<strong>{total:.2f}</strong></p>",
     unsafe_allow_html=True
 )
 
 # 目標與差額
 target = st.number_input("目標學分（例如：128）", min_value=0.0, value=128.0, step=1.0)
-diff = target - total_credits
+diff = target - total
 if diff > 0:
     st.markdown(
         f"<p style='font-size:24px;'>還需 <span style='color:red;'>{diff:.2f}</span> 學分</p>",
@@ -87,3 +98,6 @@ st.markdown(
     '開發者：<a href="https://www.instagram.com/chiuuuuu11.7" target="_blank">Chu</a>'
     '</p>', unsafe_allow_html=True
 )
+
+if name == "main": main()
+

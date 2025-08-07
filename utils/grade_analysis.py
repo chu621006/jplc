@@ -32,30 +32,43 @@ def parse_credit_and_gpa(txt):
     return 0.0, ""
 
 def calculate_total_credits(df_list):
-    total = 0.0
+    # 初始化
+    total_credits = 0.0
+    required_credits = 0.0
+    i_credits = 0.0
+    ii_credits = 0.0
+    other_credits = 0.0
     passed = []
     failed = []
-    for idx, df in enumerate(df_list, start=1):
-        if df.shape[1] < 2:
-            continue
-        # 嘗試定位關鍵欄位
-        cols = [c for c in df.columns]
-        # 簡單匹配
-        subj_col = next((c for c in cols if "科目" in c or "課程" in c), None)
-        cred_col = next((c for c in cols if "學分" in c or "Credit" in c), None)
-        gpa_col  = next((c for c in cols if "GPA" in c or "成績" in c), None)
-        if not (subj_col and cred_col):
-            continue
 
+    from utils.credit_rules import categorize_course
+
+    for df in df_list:
         for _, row in df.iterrows():
-            subj = normalize_text(row.get(subj_col, ""))
-            cr_txt = normalize_text(row.get(cred_col, ""))
-            gp_txt = normalize_text(row.get(gpa_col, "")) if gpa_col else ""
-            cr, gp = parse_credit_and_gpa(cr_txt), parse_credit_and_gpa(gp_txt)[1]
-            credit, _gpa = cr[0], gp or cr[1]
-            if _gpa and not is_passing_gpa(_gpa):
-                failed.append({"科目名稱":subj, "學分":credit, "GPA":_gpa})
+            name = row.get("科目名稱", "")
+            credit = row.get("學分", 0.0)
+            gpa = row.get("GPA", "") or row.get("成績","") or row.get("gpa","")
+            if is_passing_gpa(gpa):
+                passed.append(row.to_dict())
+                total_credits += credit
+                cat = categorize_course(name)
+                if cat == "Required":
+                    required_credits += credit
+                elif cat == "I":
+                    i_credits += credit
+                elif cat == "II":
+                    ii_credits += credit
+                else:
+                    other_credits += credit
             else:
-                total += credit
-                passed.append({"科目名稱":subj, "學分":credit, "GPA":_gpa})
-    return total, passed, failed
+                failed.append(row.to_dict())
+
+    return {
+        "total": total_credits,
+        "required": required_credits,
+        "i_elective": i_credits,
+        "ii_elective": ii_credits,
+        "other_elective": other_credits,
+        "passed": passed,
+        "failed": failed
+    }

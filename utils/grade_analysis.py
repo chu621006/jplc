@@ -3,11 +3,9 @@
 import re
 import pandas as pd
 
-# === 分類函式：只比對符號前的中文，返回 Required / I / II / Other ===
 def categorize_course(name: str) -> str:
-    # 去掉括號及其內容、學期標記、特殊符號
+    """只比對符號前的中文字，回傳 'Required','I','II' 或 'Other'"""
     base = re.sub(r'（.*?）|\(.*?\)|上學期|下學期|[、:：「」【】\[\]–—]', '', name).strip()
-    # 系所與通識必修
     REQUIRED = {
         "綜合日語一A","綜合日語一B","綜合日語一C",
         "綜合日語二A","綜合日語二B","綜合日語二C",
@@ -17,7 +15,6 @@ def categorize_course(name: str) -> str:
         "AI思維與程式設計","全民國防教育軍事訓練–國防政策",
         "大一體育：體適能／桌球","大二體育：體操與瑜珈理論與實作"
     }
-    # 一類選修
     I_SET = {
         "日語語音學演練","日語討論與表達","日語新聞聽解","日劇聽解",
         "專題論證寫作","學習方法論","日語戲劇實踐","類義表現",
@@ -28,16 +25,14 @@ def categorize_course(name: str) -> str:
         "日本古代中世史","日本史","日本近世近代史",
         "台日交流實踐-農食育中的語言實踐"
     }
-    # 二類選修
     II_SET = {
         "華日翻譯","翻譯-中翻日","日語口譯入門","日語口譯實務",
         "職場日語","商務日語","日本上古中古表象文化論","日本古典表象文化論",
         "日本中世近世表象文化論","日語專書導讀","日語精讀與專書探討",
         "日本近代表象文化論","日本現代表象文化論","日本殖民時期台灣日語文學",
-        "現代台灣日語文學","文化與敘事","越境文化論","跨文化敘事","日本國際關係",
-        "行走·探索·思考-台灣裡的東亞"
+        "現代台灣日語文學","文化與敘事","越境文化論","跨文化敘事",
+        "日本國際關係","行走·探索·思考-台灣裡的東亞"
     }
-
     if base in REQUIRED or base.startswith(("人文：","社會：","自然：")):
         return "Required"
     if base in I_SET:
@@ -46,22 +41,14 @@ def categorize_course(name: str) -> str:
         return "II"
     return "Other"
 
-# === 判斷是否通過的成績條件 ===
 def is_passing_gpa(gpa: str) -> bool:
+    """C-以上（含C-）、通過、抵免視為通過"""
     return bool(re.search(r'抵免|通過|[ABC][\+\-]?|C-', str(gpa)))
 
-def calculate_total_credits(df_list):
+def calculate_total_credits(df_list: list[pd.DataFrame]) -> dict:
     """
-    接受多個 DataFrame（每張成績表），回傳：
-    {
-      'total':         float,  # 總學分
-      'required':      float,  # 必修學分
-      'i_elective':    float,  # 一類選修
-      'ii_elective':   float,  # 二類選修
-      'other_elective':float,  # 其他選修
-      'passed':        list,   # 通過課程明細
-      'failed':        list    # 未通過課程明細
-    }
+    接受多個 DataFrame，回傳學分統計：
+      'total', 'required', 'i_elective', 'ii_elective', 'other_elective', 'passed', 'failed'
     """
     total_credits    = 0.0
     required_credits = 0.0
@@ -76,11 +63,9 @@ def calculate_total_credits(df_list):
             name   = row.get("科目名稱") or row.get("name") or ""
             credit = row.get("學分") or row.get("credit") or 0.0
             gpa    = row.get("GPA") or row.get("成績") or row.get("gpa") or ""
-
             if is_passing_gpa(gpa):
                 passed.append({"科目名稱": name, "學分": credit, "成績": gpa})
                 total_credits += credit
-
                 cat = categorize_course(name)
                 if cat == "Required":
                     required_credits += credit

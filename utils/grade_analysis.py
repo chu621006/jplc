@@ -33,6 +33,7 @@ def categorize_course(name: str) -> str:
         "現代台灣日語文學","文化與敘事","越境文化論","跨文化敘事",
         "日本國際關係","行走·探索·思考-台灣裡的東亞"
     }
+
     if base in REQUIRED or base.startswith(("人文：","社會：","自然：")):
         return "Required"
     if base in I_SET:
@@ -42,12 +43,12 @@ def categorize_course(name: str) -> str:
     return "Other"
 
 def is_passing_gpa(gpa: str) -> bool:
-    """C-以上（含C-）、通過、抵免視為通過"""
+    """C-以上（含 C-）、通過、抵免都算通過"""
     return bool(re.search(r'抵免|通過|[ABC][\+\-]?|C-', str(gpa)))
 
 def calculate_total_credits(df_list: list[pd.DataFrame]) -> dict:
     """
-    接受多個 DataFrame，回傳學分統計：
+    接受多個 DataFrame，回傳學分統計字典：
       'total', 'required', 'i_elective', 'ii_elective', 'other_elective', 'passed', 'failed'
     """
     total_credits    = 0.0
@@ -60,12 +61,20 @@ def calculate_total_credits(df_list: list[pd.DataFrame]) -> dict:
 
     for df in df_list:
         for _, row in df.iterrows():
-            name   = row.get("科目名稱") or row.get("name") or ""
-            credit = row.get("學分") or row.get("credit") or 0.0
-            gpa    = row.get("GPA") or row.get("成績") or row.get("gpa") or ""
+            name = row.get("科目名稱") or row.get("name") or ""
+            # 先嘗試把學分轉成 float
+            raw_credit = row.get("學分") or row.get("credit") or 0.0
+            try:
+                credit = float(raw_credit)
+            except Exception:
+                credit = 0.0
+            # 取成績欄位
+            gpa = row.get("GPA") or row.get("成績") or row.get("gpa") or ""
+
             if is_passing_gpa(gpa):
                 passed.append({"科目名稱": name, "學分": credit, "成績": gpa})
                 total_credits += credit
+
                 cat = categorize_course(name)
                 if cat == "Required":
                     required_credits += credit

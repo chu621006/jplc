@@ -1,15 +1,16 @@
+# utils/grade_analysis.py
 import re
 import pandas as pd
 
 # ---------- 名稱正規化 ----------
 def _normalize_name(name: str) -> str:
     s = str(name or "")
-    s = re.sub(r'（.*?）|\(.*?\)|〈.*?〉|【.*?】', '', s)
+    s = re.sub(r'（.*?）|\(.*?\)|〈.*?〉|【.*?】', '', s)   # 各式括號+內容
     s = re.sub(r'上學期|下學期', '', s)
-    s = re.sub(r'[：:、，,。．\.\-/／—–\s]+', '', s)
+    s = re.sub(r'[：:、，,。．\.\-/／—–\s]+', '', s)      # 標點與空白
     return s.strip()
 
-# ---------- 判定是否通過 ----------
+# ---------- 通過成績 ----------
 def is_passing_gpa(gpa: str) -> bool:
     return bool(re.search(r'抵免|通過|[ABC][\+\-]?|C-', str(gpa)))
 
@@ -28,7 +29,9 @@ _I_LIST = [
     "日本資訊傳播導論","媒體素養論","歷史與敘事","台日區域專題",
     "不可思議的日本","台日報導製作","台日報導實踐","台日報導寫作",
     "日本古代中世史","日本史","日本近世近代史",
-    "台日交流實踐-農食育中的語言實踐"
+    "台日交流實踐-農食育中的語言實踐",
+    # 加上這個就不會被『社會*』誤抓去通識
+    "社會與企業"
 ]
 _II_LIST = [
     "華日翻譯","翻譯-中翻日","日語口譯入門","日語口譯實務",
@@ -46,16 +49,20 @@ _II_SET  = {_normalize_name(x) for x in _II_LIST}
 # ---------- 課程分類 ----------
 def categorize_course(name: str) -> str:
     raw = str(name or "").strip()
-    # 通識前綴（人文/社會/自然）
-    if re.match(r'^\s*(人文|社會|自然)', raw):
-        return "Required"
     base = _normalize_name(raw)
+
+    # 1) 先比對明確字典（避免『社會與企業』被通識前綴吃掉）
     if any(base.startswith(tok) for tok in _REQ_SET):
         return "Required"
     if any(base.startswith(tok) for tok in _I_SET):
         return "I"
     if any(base.startswith(tok) for tok in _II_SET):
         return "II"
+
+    # 2) 再判斷通識：前綴 + 必須有分隔符（： : ／ / － - 其一）
+    if re.match(r'^\s*(人文|社會|自然)\s*[:：／/\-－]', raw):
+        return "Required"
+
     return "Other"
 
 # ---------- 主計算 ----------
@@ -66,24 +73,18 @@ def calculate_total_credits(df_list: list[pd.DataFrame]) -> dict:
     ii_credits       = 0.0
     other_credits    = 0.0
 
-    passed_all   = []
-    failed_all   = []
-    passed_req   = []
-    passed_i     = []
-    passed_ii    = []
-    passed_other = []
+    passed_all, failed_all = [], []
+    passed_req, passed_i, passed_ii, passed_other = [], [], [], []
 
     for df in df_list:
-        # 嘗試對應欄位（保險起見）
         name_col   = "科目名稱" if "科目名稱" in df.columns else ( "課程名稱" if "課程名稱" in df.columns else df.columns[0] )
         credit_col = "學分"     if "學分"     in df.columns else ( "credit" if "credit" in df.columns else df.columns[-2] )
         grade_col  = "成績"     if "成績"     in df.columns else ( "GPA"    if "GPA"    in df.columns else df.columns[-1] )
 
         for _, row in df.iterrows():
             name = row.get(name_col, "")
-            raw_credit = row.get(credit_col, 0)
             try:
-                credit = float(raw_credit)
+                credit = float(row.get(credit_col, 0) or 0)
             except Exception:
                 credit = 0.0
             gpa = row.get(grade_col, "")
@@ -95,17 +96,13 @@ def calculate_total_credits(df_list: list[pd.DataFrame]) -> dict:
 
                 cat = categorize_course(name)
                 if cat == "Required":
-                    required_credits += credit
-                    passed_req.append(item)
+                    required_credits += credit; passed_req.append(item)
                 elif cat == "I":
-                    i_credits += credit
-                    passed_i.append(item)
+                    i_credits += credit; passed_i.append(item)
                 elif cat == "II":
-                    ii_credits += credit
-                    passed_ii.append(item)
+                    ii_credits += credit; passed_ii.append(item)
                 else:
-                    other_credits += credit
-                    passed_other.append(item)
+                    other_credits += credit; passed_other.append(item)
             else:
                 failed_all.append({"科目名稱": name, "學分": credit, "成績": gpa})
 
@@ -117,8 +114,8 @@ def calculate_total_credits(df_list: list[pd.DataFrame]) -> dict:
         "other_elective": other_credits,
         "passed":         passed_all,
         "failed":         failed_all,
-        "passed_required":passed_req,
-        "passed_i":       passed_i,
-        "passed_ii":      passed_ii,
-        "passed_other":   passed_other
+        "passed_required": passed_req,
+        "passed_i":        passed_i,
+        "passed_ii":       passed_ii,
+        "passed_other":    passed_other,
     }

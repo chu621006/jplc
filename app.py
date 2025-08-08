@@ -8,6 +8,16 @@ def main():
     st.set_page_config(page_title="成績單學分計算工具（DOCX）", layout="wide")
     st.title("📄 成績單學分計算工具（DOCX）")
 
+    # 使用說明下載按鈕
+    with open("usage_guide.pdf", "rb") as f:
+        pdf_bytes = f.read()
+    st.download_button(
+        label="📖 使用說明 (PDF)",
+        data=pdf_bytes,
+        file_name="使用說明.pdf",
+        mime="application/pdf"
+    )
+
     uploaded_file = st.file_uploader("請上傳成績單（Word .docx）", type=["docx"])
     if not uploaded_file:
         st.info("請先上傳 DOCX 檔案。")
@@ -110,4 +120,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 

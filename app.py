@@ -1,46 +1,33 @@
 import streamlit as st
 import pandas as pd
 
-from utils.grade_analysis import calculate_total_credits
 from utils.docx_processing import process_docx_file
-from utils.pdf_processing import process_pdf_file  # 仍保留，若你想同時支援 PDF
+from utils.grade_analysis import calculate_total_credits
 
 def main():
-    st.set_page_config(page_title="成績單學分計算工具", layout="wide")
-    st.title("📄 成績單學分計算工具（DOCX 版）")
+    st.set_page_config(page_title="成績單學分計算工具（DOCX）", layout="wide")
+    st.title("📄 成績單學分計算工具（DOCX）")
 
-    # 上傳（預設只開 .docx；若要同時支援 PDF，把 type 改成 ["docx","pdf"]）
     uploaded_file = st.file_uploader("請上傳成績單（Word .docx）", type=["docx"])
     if not uploaded_file:
         st.info("請先上傳 DOCX 檔案。")
         return
 
-    # 解析 DOCX（若你要同時支援 PDF，可依副檔名分支）
-    name_lower = uploaded_file.name.lower()
-    if name_lower.endswith(".docx"):
-        dfs = process_docx_file(uploaded_file)
-    elif name_lower.endswith(".pdf"):
-        dfs = process_pdf_file(uploaded_file)
-    else:
-        st.error("不支援的檔案格式。")
-        return
-
+    # 解析 DOCX -> DataFrame 列表
+    dfs = process_docx_file(uploaded_file)
     if not dfs:
         st.error("讀不到表格資料，請確認檔案內容。")
         return
 
-    # 計算學分
+    # 統計
     stats = calculate_total_credits(dfs)
     total           = stats["total"]
     required        = stats["required"]
     i_elective      = stats["i_elective"]
     ii_elective     = stats["ii_elective"]
     other_elective  = stats["other_elective"]
-    passed          = stats["passed"]
-    failed          = stats["failed"]
     elective_total  = i_elective + ii_elective + other_elective
 
-    # 顯示結果
     st.markdown("## ✅ 查詢結果")
     st.markdown(f"- **必修學分**：{required:.0f} 學分")
     st.markdown(f"- **一類選修學分**：{i_elective:.0f} 學分")
@@ -51,33 +38,59 @@ def main():
         unsafe_allow_html=True
     )
 
-    # 通過課程列表
-    st.markdown("### 📚 通過的課程列表")
-    if passed:
-        df_passed = pd.DataFrame(passed)
-        st.dataframe(df_passed, use_container_width=True)
-        st.download_button(
-            "下載通過課程 CSV",
-            df_passed.to_csv(index=False, encoding="utf-8-sig"),
-            file_name="通過課程列表.csv",
-            mime="text/csv",
-        )
-    else:
-        st.info("未偵測到任何通過的課程。")
+    # 各分類通過清單（分開顯示）
+    st.markdown("### 🧩 分類清單（通過）")
 
-    # 不及格課程列表
-    st.markdown("### ⚠️ 不及格的課程列表")
-    if failed:
-        df_failed = pd.DataFrame(failed)
-        st.dataframe(df_failed, use_container_width=True)
-        st.download_button(
-            "下載不及格課程 CSV",
-            df_failed.to_csv(index=False, encoding="utf-8-sig"),
-            file_name="不及格課程列表.csv",
-            mime="text/csv",
-        )
-    else:
-        st.info("未偵測到任何不及格的課程。")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("必修（通過）")
+        req_df = pd.DataFrame(stats["passed_required"])
+        st.dataframe(req_df if not req_df.empty else pd.DataFrame(columns=["科目名稱","學分","成績"]),
+                     use_container_width=True)
+        if not req_df.empty:
+            st.download_button("下載必修清單 CSV",
+                               req_df.to_csv(index=False, encoding="utf-8-sig"),
+                               "必修_通過.csv", "text/csv")
+
+    with col2:
+        st.subheader("一類選修（通過）")
+        i_df = pd.DataFrame(stats["passed_i"])
+        st.dataframe(i_df if not i_df.empty else pd.DataFrame(columns=["科目名稱","學分","成績"]),
+                     use_container_width=True)
+        if not i_df.empty:
+            st.download_button("下載一類清單 CSV",
+                               i_df.to_csv(index=False, encoding="utf-8-sig"),
+                               "一類選修_通過.csv", "text/csv")
+
+    col3, col4 = st.columns(2)
+    with col3:
+        st.subheader("二類選修（通過）")
+        ii_df = pd.DataFrame(stats["passed_ii"])
+        st.dataframe(ii_df if not ii_df.empty else pd.DataFrame(columns=["科目名稱","學分","成績"]),
+                     use_container_width=True)
+        if not ii_df.empty:
+            st.download_button("下載二類清單 CSV",
+                               ii_df.to_csv(index=False, encoding="utf-8-sig"),
+                               "二類選修_通過.csv", "text/csv")
+
+    with col4:
+        st.subheader("其他選修（通過）")
+        other_df = pd.DataFrame(stats["passed_other"])
+        st.dataframe(other_df if not other_df.empty else pd.DataFrame(columns=["科目名稱","學分","成績"]),
+                     use_container_width=True)
+        if not other_df.empty:
+            st.download_button("下載其他選修清單 CSV",
+                               other_df.to_csv(index=False, encoding="utf-8-sig"),
+                               "其他選修_通過.csv", "text/csv")
+
+    # 全部通過/未通過清單（原本的）
+    st.markdown("### 📚 所有通過課程（彙整）")
+    all_passed_df = pd.DataFrame(stats["passed"])
+    st.dataframe(all_passed_df, use_container_width=True)
+
+    st.markdown("### ⚠️ 未通過課程")
+    failed_df = pd.DataFrame(stats["failed"])
+    st.dataframe(failed_df, use_container_width=True)
 
 if __name__ == "__main__":
     main()

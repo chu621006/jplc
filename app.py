@@ -5,8 +5,8 @@ from utils.docx_processing import process_docx_file
 from utils.grade_analysis import calculate_total_credits
 
 def main():
-    st.set_page_config(page_title="成績單學分計算工具（DOCX）", layout="wide")
-    st.title("📄 成績單學分計算工具（DOCX）")
+    st.set_page_config(page_title="日文系必選修分類（僅支援word檔）", layout="wide")
+    st.title("📄 日文系必選修分類（僅支援word檔）")
 
     # 使用說明下載按鈕
     with open("usage_guide.pdf", "rb") as f:
@@ -114,6 +114,7 @@ st.sidebar.markdown(
 
 if __name__ == "__main__":
     main()
+
 
 
 

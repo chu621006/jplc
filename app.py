@@ -17,6 +17,8 @@ def main():
         file_name="分類使用說明.pdf",
         mime="application/pdf"
     )
+
+    st.write("請注意，輔系及雙主修同學的「外系」課程會被歸類在選修學分。")
     
     uploaded_file = st.file_uploader("請上傳成績單（Word .docx）", type=["docx"])
     if not uploaded_file:
@@ -114,6 +116,7 @@ st.sidebar.markdown(
 
 if __name__ == "__main__":
     main()
+
 
 
 

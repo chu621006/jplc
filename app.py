@@ -17,6 +17,20 @@ def main():
         file_name="使用說明.pdf",
         mime="application/pdf"
     )
+    
+    # 回饋連結 & 開發者資訊（永遠顯示）
+    st.markdown(
+        '<p style="text-align:center;">'
+        '感謝您的使用，若您有相關修改建議或發生其他類型錯誤，'
+        '<a href="https://forms.gle/Bu95Pt74d1oGVCev5" target="_blank">請點此提出</a>'
+        '</p>', unsafe_allow_html=True
+    )
+    st.markdown(
+        '<p style="text-align:center;">'
+        '開發者：<a href="https://www.instagram.com/chiuuuuu11.7?igsh=MWRlc21zYW55dWZ5Yw==" target="_blank">Chu</a>'
+        '</p>', unsafe_allow_html=True
+    )
+    st.divider()
 
     uploaded_file = st.file_uploader("請上傳成績單（Word .docx）", type=["docx"])
     if not uploaded_file:
@@ -102,23 +116,8 @@ def main():
     failed_df = pd.DataFrame(stats["failed"])
     st.dataframe(failed_df, use_container_width=True)
 
-# 回饋連結
-    st.markdown(
-        '<p style="text-align:center;">'
-        '感謝您的使用，若您有相關修改建議或發生其他類型錯誤，'
-        '<a href="https://forms.gle/Bu95Pt74d1oGVCev5" target="_blank">請點此提出</a>'
-        '</p>',
-        unsafe_allow_html=True
-    )
-    # 開發者資訊
-    st.markdown(
-        '<p style="text-align:center;">'
-        '開發者：<a href="https://www.instagram.com/chiuuuuu11.7?igsh=MWRlc21zYW55dWZ5Yw==" target="_blank">Chu</a>'
-        '</p>',
-        unsafe_allow_html=True
-    )
-
 if __name__ == "__main__":
     main()
+
 
 

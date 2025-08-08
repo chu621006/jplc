@@ -9,12 +9,12 @@ def main():
     st.title("📄 日文系必選修分類（僅支援word檔）")
 
     # 使用說明下載按鈕
-    with open("usage_guide.pdf", "rb") as f:
+    with open("jplc.caculate.pdf", "rb") as f:
         pdf_bytes = f.read()
     st.download_button(
-        label="📖 使用說明 (PDF)",
+        label="📖 分類使用說明 (PDF)",
         data=pdf_bytes,
-        file_name="使用說明.pdf",
+        file_name="分類使用說明.pdf",
         mime="application/pdf"
     )
     
@@ -114,6 +114,7 @@ st.sidebar.markdown(
 
 if __name__ == "__main__":
     main()
+
 
 
 

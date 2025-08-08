@@ -101,6 +101,7 @@ def main():
     st.markdown("### ⚠️ 未通過課程")
     failed_df = pd.DataFrame(stats["failed"])
     st.dataframe(failed_df, use_container_width=True
+                )
                  
 st.sidebar.markdown("### 回饋與開發者")
 st.sidebar.markdown(
@@ -113,6 +114,7 @@ st.sidebar.markdown(
 
 if __name__ == "__main__":
     main()
+
 
 
 
